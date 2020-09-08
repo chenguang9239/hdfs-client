@@ -28,6 +28,7 @@ class HdfsClient {
 
   void Init();
   hdfsFS Connect(const std::string &name_node);
+  void Disconnect();
   int Create(const std::string &hdfs_path, const std::string &save_path);
   int OverWrite(const std::string &hdfs_path, const std::string &save_path,
                 tObjectKind m_kind);

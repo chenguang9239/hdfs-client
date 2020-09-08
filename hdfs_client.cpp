@@ -14,6 +14,7 @@ int HdfsClient::setNameNodes(const std::vector<std::string> &name_nodes) {
 void HdfsClient::Init() {
   hdfs_port_ = 8020;
   domain_port_ = 50070;
+  fs_ = NULL;
   local_fs_ = hdfsConnectNewInstance(NULL, 0);
 }
 
@@ -65,7 +66,20 @@ int HdfsClient::InitFs() {
   return -1;
 }
 
+void HdfsClient::Disconnect() {
+  if (fs_) {
+    int res = hdfsDisconnect(fs_);
+    if (res == 0) {
+      LOG_INFO << "disconnect ok";
+    } else {
+      LOG_ERROR << "disconnect error: " << ErrStr(errno)
+                 << ", but resources freed";
+    }
+  }
+}
+
 hdfsFS HdfsClient::Connect(const std::string &name_node) {
+  Disconnect();
   hdfsFS fs = hdfsConnect(name_node.c_str(), hdfs_port_);
   if (!fs) {
     LOG_ERROR << "connect error: " << ww::ErrStr(errno);
@@ -90,14 +104,16 @@ int HdfsClient::CopyToLocal(const std::string &hdfs_path,
 
   bool need_over_write = ww::Exist(real_save_path) == 0;
 
+  bool need_reconnect = false;
   while (retry-- >= 0) {
-    if (!fs_) {
+    if (!fs_ || need_reconnect) {
       sleep(1);
       LOG_ERROR << "invalid fs, try to reconnect";
       InitFs();
       continue;
     }
 
+    need_reconnect = true;
     if (need_over_write) {
       hdfsFileInfo *file_info = hdfsGetPathInfo(fs_, real_hdfs_path.c_str());
 
