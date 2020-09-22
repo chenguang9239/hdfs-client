@@ -125,6 +125,8 @@ int HdfsClient::CopyToLocal(const std::string &hdfs_path,
       } else {
         res = OverWrite(real_hdfs_path, real_save_path, file_info->mKind);
       }
+
+      hdfsFreeFileInfo(file_info, 1);
     } else {
       res = Create(real_hdfs_path, real_save_path);
     }
